@@ -15,13 +15,12 @@
 
 .App-header {
   background-color: #282c34;
-  min-height: 100vh;
+  padding: 10px 20px; /* Reduced vertical padding */
+  color: white;
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
 .App-link {
@@ -35,4 +34,67 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.container {
+  display: flex;
+  justify-content: space-around;
+  height: 80vh; /* Adjust height as needed */
+}
+
+.editor-pane {
+  width: 48%; /* Give a little space between panes */
+  height: 100%;
+  border: 1px solid #ccc;
+  padding: 10px;
+  overflow-y: auto; /* Allow scrolling for long content */
+  text-align: left;
+  white-space: pre-wrap; /* Preserve whitespace and newlines */
+  font-family: monospace;
+  background-color: #f9f9f9;
+}
+
+/* Styles for panes when syntax highlighting is active */
+.syntax-highlighted-pane pre[class*="language-"] {
+  margin: 0; /* Remove default margin from Prism's pre tag */
+  padding: 0; /* Remove default padding from Prism's pre tag */
+  background-color: transparent; /* Inherit background from .editor-pane */
+  white-space: pre-wrap; /* Ensure our whitespace handling is respected */
+  word-wrap: break-word; /* Ensure long lines wrap */
+}
+
+/* Ensure the .editor-pane itself still controls the overall padding and border */
+.syntax-highlighted-pane {
+  /* white-space: pre-wrap; /* This is already in .editor-pane, might be redundant here but ensures it applies */
+  /* font-family: monospace; /* This is already in .editor-pane */
+}
+
+.editor-pane:focus {
+  outline: 2px solid #007bff;
+}
+
+/* Placeholder styling for the input pane */
+.editor-pane[placeholder]:empty:before {
+  content: attr(placeholder);
+  color: #aaa;
+  pointer-events: none; /* Make placeholder non-interactive */
+  display: block; /* For the placeholder to appear */
+}
+
+.options {
+  margin-top: 10px;
+  display: flex;
+  gap: 15px;
+}
+
+.option-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.option-label input[type="checkbox"] {
+  cursor: pointer;
 }
