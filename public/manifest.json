@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "LaTeX Comment Remover",
+  "name": "LaTeX Comment Remover",
   "icons": [
     {
       "src": "favicon.ico",
