@@ -1,6 +1,6 @@
 {
-  "short_name": "LaTeX Comment Remover",
-  "name": "LaTeX Comment Remover",
+  "short_name": "Comment Remover",
+  "name": "Comment Remover",
   "icons": [
     {
       "src": "favicon.ico",
