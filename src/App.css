@@ -40,18 +40,49 @@
   display: flex;
   justify-content: space-around;
   height: 80vh; /* Adjust height as needed */
+  gap: 20px;
+}
+
+.editor-wrapper {
+  width: 48%; /* Give a little space between panes */
+  height: 100%;
+  display: flex;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  overflow: hidden;
+}
+
+.line-numbers {
+  width: 50px;
+  padding: 10px 8px;
+  text-align: right;
+  font-family: monospace;
+  font-size: 14px;
+  color: #858585;
+  background-color: #f0f0f0;
+  border-right: 1px solid #ccc;
+  overflow: hidden;
+  white-space: pre;
+  line-height: 1.5;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  pointer-events: none;
 }
 
 .editor-pane {
-  width: 48%; /* Give a little space between panes */
+  flex: 1;
   height: 100%;
-  border: 1px solid #ccc;
+  border: none;
   padding: 10px;
   overflow-y: auto; /* Allow scrolling for long content */
   text-align: left;
   white-space: pre-wrap; /* Preserve whitespace and newlines */
   font-family: monospace;
-  background-color: #f9f9f9;
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: transparent;
 }
 
 /* Styles for panes when syntax highlighting is active */
@@ -63,14 +94,13 @@
   word-wrap: break-word; /* Ensure long lines wrap */
 }
 
-/* Ensure the .editor-pane itself still controls the overall padding and border */
-.syntax-highlighted-pane {
-  /* white-space: pre-wrap; /* This is already in .editor-pane, might be redundant here but ensures it applies */
-  /* font-family: monospace; /* This is already in .editor-pane */
+.editor-pane:focus {
+  outline: none;
 }
 
-.editor-pane:focus {
+.editor-wrapper:focus-within {
   outline: 2px solid #007bff;
+  outline-offset: -2px;
 }
 
 /* Placeholder styling for the input pane */
@@ -81,10 +111,40 @@
   display: block; /* For the placeholder to appear */
 }
 
-.options {
+.controls-container {
+  width: 100%;
   margin-top: 10px;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.options {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mode-selector {
+  display: flex;
   gap: 15px;
+  padding: 8px 15px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mode-option input[type="radio"] {
+  cursor: pointer;
 }
 
 .option-label {
@@ -93,6 +153,14 @@
   gap: 5px;
   cursor: pointer;
   font-size: 14px;
+  transition: opacity 0.2s ease;
+  position: absolute;
+  right: 0;
+}
+
+.option-label.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .option-label input[type="checkbox"] {
