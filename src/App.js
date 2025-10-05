@@ -15,6 +15,7 @@ function App() {
   const [removeDocstrings, setRemoveDocstrings] = useState(false); // State for docstring removal (Python only)
   const [leftLineNumbers, setLeftLineNumbers] = useState('1');
   const [rightLineNumbers, setRightLineNumbers] = useState('1');
+  const [isLeftFocused, setIsLeftFocused] = useState(false);
 
   const leftPaneRef = useRef(null);
   const rightPaneRef = useRef(null);
@@ -29,6 +30,66 @@ function App() {
     return lines.map((_, index) => index + 1).join('\n');
   };
 
+  // Helper function to save selection based on character offsets
+  const saveSelection = (containerEl) => {
+    if (!containerEl || !window.getSelection || !document.createRange) return null;
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(containerEl);
+        preCaretRange.setEnd(range.startContainer, range.startOffset);
+        const start = preCaretRange.toString().length;
+
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        const end = preCaretRange.toString().length;
+        return { start, end, collapsed: range.collapsed };
+    }
+    return null;
+  };
+
+  // Helper function to restore selection based on character offsets
+  const restoreSelection = (containerEl, savedSel) => {
+    if (!containerEl || !savedSel || !window.getSelection || !document.createRange) return;
+
+    let charIndex = 0;
+    const range = document.createRange();
+    range.setStart(containerEl, 0); // Default start
+    range.collapse(true); // Default to collapsed
+
+    let nodeStack = [containerEl];
+    let node, foundStart = false, foundEnd = false;
+
+    // Traverse the tree to find the text nodes corresponding to the character offsets
+    while ((node = nodeStack.pop()) && (!foundStart || !foundEnd)) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const nextCharIndex = charIndex + node.length;
+            if (!foundStart && savedSel.start >= charIndex && savedSel.start <= nextCharIndex) {
+                range.setStart(node, savedSel.start - charIndex);
+                foundStart = true;
+            }
+            if (!foundEnd && savedSel.end >= charIndex && savedSel.end <= nextCharIndex) {
+                range.setEnd(node, savedSel.end - charIndex);
+                foundEnd = true;
+            }
+            charIndex = nextCharIndex;
+        } else {
+            let i = node.childNodes.length;
+            while (i--) { // Add children in reverse order for DFS-like traversal
+                nodeStack.push(node.childNodes[i]);
+            }
+        }
+    }
+    
+    if (foundStart && !foundEnd && savedSel.collapsed) {
+        range.collapse(true);
+    }
+
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  };
+
   const handleInputChange = (event) => {
     const editorDiv = leftPaneRef.current;
     if (!editorDiv) return;
@@ -37,6 +98,9 @@ function App() {
 
     setRawText(currentText);
     setLeftLineNumbers(generateLineNumbers(currentText));
+
+    // Don't apply syntax highlighting while editing (focused)
+    // This prevents cursor jumping issues
 
     processOutput(currentText);
   };
@@ -177,7 +241,14 @@ function App() {
       processedText = text.replace(/<!--[\s\S]*?-->/g, '');
     }
     
+    // Remove lines that contain only whitespace
+    processedText = processedText.split('\n').map(line => {
+      return line.trim() === '' ? '' : line;
+    }).join('\n');
+    
+    // Replace 3+ newlines with 2 newlines (max one empty line between content)
     processedText = processedText.replace(/\n{3,}/g, '\n\n');
+    
     const language = Prism.languages[mode];
     const highlightedOutputForRight = Prism.highlight(processedText, language, mode);
     setHighlightedRight(highlightedOutputForRight);
@@ -198,6 +269,25 @@ function App() {
     }
   }, []); // Run only on initial mount
 
+  // Apply or remove syntax highlighting based on focus
+  const applyLeftPaneSyntaxHighlighting = () => {
+    const editorDiv = leftPaneRef.current;
+    if (editorDiv && rawText && !isLeftFocused) {
+      // Don't modify the original text in the left pane, just highlight it
+      const language = Prism.languages[mode];
+      const highlightedHTML = Prism.highlight(rawText, language, mode);
+      editorDiv.innerHTML = highlightedHTML;
+    } else if (editorDiv && isLeftFocused) {
+      // When focused, show plain text
+      editorDiv.innerText = rawText;
+    }
+  };
+
+  // Re-highlight left pane when mode changes or focus changes
+  useEffect(() => {
+    applyLeftPaneSyntaxHighlighting();
+  }, [mode, isLeftFocused, rawText]); // Re-highlight when these change
+
   // Synchronized scrolling
   const handleScroll = (sourceRef, targetRef, sourceLineNumbersRef, targetLineNumbersRef) => {
     if (isSyncingScroll.current) return;
@@ -211,16 +301,19 @@ function App() {
     // Sync with opposite pane
     if (sourceRef.current && targetRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = sourceRef.current;
-      const scrollableHeight = scrollHeight - clientHeight;
-      if (scrollableHeight > 0) {
-          const scrollRatio = scrollTop / scrollableHeight;
-          targetRef.current.scrollTop = scrollRatio * (targetRef.current.scrollHeight - targetRef.current.clientHeight);
+      const sourceScrollableHeight = scrollHeight - clientHeight;
+      const targetScrollableHeight = targetRef.current.scrollHeight - targetRef.current.clientHeight;
+      
+      if (sourceScrollableHeight > 0 && targetScrollableHeight > 0) {
+          const scrollRatio = scrollTop / sourceScrollableHeight;
+          targetRef.current.scrollTop = scrollRatio * targetScrollableHeight;
           
           // Sync target line numbers
           if (targetLineNumbersRef.current) {
             targetLineNumbersRef.current.scrollTop = targetRef.current.scrollTop;
           }
       } else {
+          // If one of the panes is not scrollable, align both to top
           targetRef.current.scrollTop = 0;
           if (targetLineNumbersRef.current) {
             targetLineNumbersRef.current.scrollTop = 0;
@@ -299,9 +392,11 @@ function App() {
           </div>
           <div
             ref={leftPaneRef}
-            className="editor-pane"
+            className="editor-pane syntax-highlighted-pane"
             contentEditable
             onInput={handleInputChange}
+            onFocus={() => setIsLeftFocused(true)}
+            onBlur={() => setIsLeftFocused(false)}
             onScroll={() => handleScroll(leftPaneRef, rightPaneRef, leftLineNumbersRef, rightLineNumbersRef)}
             suppressContentEditableWarning={true}
             placeholder={`Paste your ${mode === 'latex' ? 'LaTeX' : mode === 'python' ? 'Python' : 'Markdown'} code here...`}

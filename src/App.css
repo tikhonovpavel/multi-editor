@@ -39,7 +39,7 @@
 .container {
   display: flex;
   justify-content: space-around;
-  height: 80vh; /* Adjust height as needed */
+  height: calc(100vh - 100px); /* Full viewport height minus header */
   gap: 20px;
 }
 
@@ -55,6 +55,7 @@
 .line-numbers {
   width: 50px;
   padding: 10px 8px;
+  padding-bottom: 20px; /* Extra padding at bottom to match editor pane */
   text-align: right;
   font-family: monospace;
   font-size: 14px;
@@ -69,6 +70,7 @@
   -moz-user-select: none;
   -ms-user-select: none;
   pointer-events: none;
+  box-sizing: border-box;
 }
 
 .editor-pane {
@@ -76,6 +78,7 @@
   height: 100%;
   border: none;
   padding: 10px;
+  padding-bottom: 20px; /* Extra padding at bottom to ensure last line is fully visible */
   overflow-y: auto; /* Allow scrolling for long content */
   text-align: left;
   white-space: pre-wrap; /* Preserve whitespace and newlines */
@@ -83,6 +86,7 @@
   font-size: 14px;
   line-height: 1.5;
   background-color: transparent;
+  box-sizing: border-box;
 }
 
 /* Styles for panes when syntax highlighting is active */
